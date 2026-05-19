@@ -78,3 +78,16 @@ impl ThreadPool {
     }
 }
 
+
+fn main() {
+    let pool = ThreadPool::new(4);
+
+    for i in 0..8 {
+        pool.execute(move || {
+            println!("Job {} running on thread {:?}", i,
+                     thread::current().id());
+        });
+    }
+
+    thread::sleep(std::time::Duration::from_secs(1));
+}
