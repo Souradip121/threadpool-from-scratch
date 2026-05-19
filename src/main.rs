@@ -91,3 +91,20 @@ fn main() {
 
     thread::sleep(std::time::Duration::from_secs(1));
 }
+
+impl Drop for ThreadPool {
+    fn drop(&mut self) {
+        // Drop the sender FIRST.
+        // When sender drops, the channel closes.
+        // Workers' .recv() calls return Err → they break out of their loops.
+        drop(self.sender.take());
+
+        for worker in &mut self.workers {
+            println!("Shutting down worker {}", worker.id);
+
+            if let Some(thread) = worker.thread.take() {
+                thread.join().unwrap();
+            }
+        }
+    }
+}
