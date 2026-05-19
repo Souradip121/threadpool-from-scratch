@@ -35,3 +35,33 @@ impl Worker {
         }
     }
 }
+
+pub struct ThreadPool {
+    workers: Vec<Worker>,
+    sender: Option<mpsc::Sender<Job>>,
+}
+
+impl ThreadPool {
+    pub fn new(size: usize) -> ThreadPool {
+        assert!(size > 0);
+
+        // Create the channel: sender stays here, receiver goes to workers
+        let (sender, receiver) = mpsc::channel();
+
+        // Wrap receiver so all workers can share it safely
+        let receiver = Arc::new(Mutex::new(receiver));
+
+        let mut workers = Vec::with_capacity(size);
+
+        for id in 0..size {
+            // Arc::clone does NOT clone the data —
+            // it just increments the reference count
+            workers.push(Worker::new(id, Arc::clone(&receiver)));
+        }
+
+        ThreadPool {
+            workers,
+            sender: Some(sender),
+        }
+    }
+}
